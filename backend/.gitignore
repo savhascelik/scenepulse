@@ -1,0 +1,54 @@
+# Environment & Secrets (NEVER commit)
+.env
+.env.*
+!.env.example
+auth.json
+/storage/*.key
+*.pem
+*.key
+*.crt
+
+# SQLite & Local Databases
+/database/*.sqlite
+/database/*.sqlite3
+/database/*.sqlite-journal
+/database/*.sqlite-shm
+/database/*.sqlite-wal
+/storage/database/*.sqlite*
+*.db
+*.sql
+*.dump
+
+# Dependencies & Build Outputs
+/vendor
+/node_modules
+/public/build
+/public/fonts-manifest.dev.json
+/public/hot
+/public/storage
+
+# Runtime Logs, Sessions & Cache
+*.log
+/storage/pail
+/storage/logs/*.log
+/bootstrap/cache/*.php
+
+# PHPUnit & Static Analysis
+.phpunit.result.cache
+/.phpunit.cache
+/coverage
+
+# Editor & OS Files
+.DS_Store
+Thumbs.db
+.phpactor.json
+_ide_helper.php
+_ide_helper_models.php
+Homestead.json
+Homestead.yaml
+/.codex
+/.cursor/
+/.idea
+/.nova
+/.vscode
+/.zed

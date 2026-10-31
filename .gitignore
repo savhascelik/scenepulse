@@ -1,0 +1,40 @@
+# Local Devpost, Video Studio & Internal Planning Docs
+DEVPOST_SUBMISSION.md
+ROADMAP.md
+video-studio/
+/video-studio
+*.mp4
+backend/TASKS.md
+backend/AGENTS.md
+backend/CLAUDE.md
+backend/dokploy.json
+backend/scripts/
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Dependencies & Build Artifacts
+node_modules/
+frontend/node_modules/
+backend/vendor/
+dist/
+.next/
+
+# Laravel Runtime & Logs
+backend/storage/logs/*.log
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/bootstrap/cache/*.php
+
+# OS & IDE Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

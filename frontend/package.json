@@ -1,0 +1,11 @@
+{
+  "name": "scenepulse-flownie-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ScenePulse by Flownie — Real-Time Multimodal Video Frame & 10s Audio Cultural Ad Engine powered by Qloo Taste AI",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  }
+}

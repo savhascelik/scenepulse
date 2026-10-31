@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScenePulse by Flownie — Multimodal Video Frame &amp; 10s Audio to Qloo Cultural AI</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- Subtle Editorial Background Layer (Light Mode Only, Zero Gradients) -->
+  <div class="ghost-helix-layer" aria-hidden="true">
+    <div class="giant-editorial-watermark" id="bgEditorialWatermark">SCENE 01</div>
+    <div class="ghost-card g1">
+      <span class="ghost-card-label">URN · BRAND</span>
+      <span class="ghost-card-num">01</span>
+    </div>
+    <div class="ghost-card g2">
+      <span class="ghost-card-label">URN · PLACE</span>
+      <span class="ghost-card-num">02</span>
+    </div>
+    <div class="ghost-card g3">
+      <span class="ghost-card-label">URN · BOOK / FILM</span>
+      <span class="ghost-card-num">03</span>
+    </div>
+    <div class="ghost-card g4">
+      <span class="ghost-card-label">URN · DESTINATION</span>
+      <span class="ghost-card-num">04</span>
+    </div>
+    <div class="ghost-card g5">
+      <span class="ghost-card-label">AUDIO · FRAME</span>
+      <span class="ghost-card-num">10s</span>
+    </div>
+  </div>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <div class="brand-cluster" id="brandHomeTrigger" title="Return to Scene Showcase">
+      <div class="brand-orb">S</div>
+      <div class="brand-titles">
+        <div class="brand-name">
+          <span>ScenePulse</span>
+          <span class="holographic-pill">by Flownie · Qloo Taste AI</span>
+        </div>
+        <div class="brand-sub">Paused Video Frame (&lt;canvas&gt;) + 10s Audio Window → Schema-Aware LLM → Qloo /search &amp; /v2/insights</div>
+      </div>
+    </div>
+
+    <nav class="nav-center-pills" aria-label="View Selector">
+      <button type="button" class="view-switch-btn active" id="btnViewStage">
+        01 · Scene Showcase (3 Real Videos)
+      </button>
+      <button type="button" class="view-switch-btn" id="btnViewDetail">
+        02 · Live Frame &amp; Qloo Proof Studio
+      </button>
+      <button type="button" class="view-switch-btn" id="btnViewHow">
+        03 · How It Works (Remotion)
+      </button>
+      <button type="button" class="view-switch-btn" id="btnUploadCustomVideo" style="color:var(--accent-primary);">
+        + Upload Video (MP4/WebM)
+      </button>
+      <input type="file" id="customVideoInput" accept="video/mp4,video/webm,video/quicktime" class="hidden" />
+    </nav>
+
+    <div class="nav-right-badges">
+      <div class="status-pill" id="qlooStatusPill" title="Live Qloo API Connection Status">
+        <span class="pulse-dot green" id="qlooStatusDot"></span>
+        <span id="qlooStatusText">Qloo API · Connecting...</span>
+      </div>
+      <div class="status-pill" id="llmStatusPill" title="Active Multimodal &amp; Schema Planner LLM Provider">
+        <span id="llmStatusText">LLM · Schema Planner Ready</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       SCREEN 1: SCENE SHOWCASE STAGE
+       Left: Real-Time Qloo /v2/insights Stream | Center: 3 Real Short Videos | Right: Algorithm Pipeline Summary
+       ======================================================================== -->
+  <main id="screenStage" class="stage-screen">
+    <!-- Left Column: Real-Time Qloo /v2/insights Stream & 10s Audio Telemetry -->
+    <aside class="left-ad-stream-panel" aria-label="Live Qloo /v2/insights Match Stream">
+      <div class="stream-header">
+        <div class="stream-title-cluster">
+          <span class="pulse-dot"></span>
+          <span>LIVE QLOO /V2/INSIGHTS STREAM</span>
+        </div>
+        <span class="demo-pill" id="leftStreamBucketBadge">T=00:05</span>
+      </div>
+
+      <div class="audio-radar-box">
+        <div class="radar-top">
+          <span>10s Audio &amp; Frame Telemetry</span>
+          <span id="leftRadarBpm" style="color:var(--accent-primary); font-family:var(--font-mono);">Live Signal</span>
+        </div>
+        <div class="waveform-bars" id="leftWaveformBars">
+          <div class="waveform-bar" style="height: 35%"></div>
+          <div class="waveform-bar" style="height: 65%"></div>
+          <div class="waveform-bar" style="height: 50%"></div>
+          <div class="waveform-bar" style="height: 85%"></div>
+          <div class="waveform-bar" style="height: 45%"></div>
+          <div class="waveform-bar" style="height: 92%"></div>
+          <div class="waveform-bar" style="height: 60%"></div>
+          <div class="waveform-bar" style="height: 75%"></div>
+          <div class="waveform-bar" style="height: 40%"></div>
+          <div class="waveform-bar" style="height: 88%"></div>
+          <div class="waveform-bar" style="height: 55%"></div>
+          <div class="waveform-bar" style="height: 70%"></div>
+          <div class="waveform-bar" style="height: 95%"></div>
+          <div class="waveform-bar" style="height: 50%"></div>
+          <div class="waveform-bar" style="height: 62%"></div>
+          <div class="waveform-bar" style="height: 38%"></div>
+        </div>
+        <div id="leftAudioSummaryText" style="font-size:11.5px; color:var(--text-secondary); line-height:1.4;">
+          Loading live scene telemetry...
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">
+        <span id="leftDynamicDomainsLabel">4 LLM-SELECTED QLOO DOMAINS</span>
+        <span id="leftStreamSourceTag" style="color:var(--accent-emerald); font-weight:600;">LIVE QLOO API</span>
+      </div>
+
+      <div class="live-ad-feed-list" id="leftLiveAdFeed">
+        <!-- Populated dynamically from live API by app.js -->
+      </div>
+
+      <div style="font-size:11px; color:var(--text-muted); line-height:1.45; border-top:1px solid var(--border-subtle); padding-top:10px;">
+        <strong>Dynamic Qloo Schema Routing:</strong> The LLM inspects the paused video frame and 10s audio window, selects the 4 most contextually relevant Qloo <code>/v2/insights</code> URNs, and queries Qloo Taste AI in real time.
+      </div>
+    </aside>
+
+    <!-- Center Stage: 3 Horizontally Aligned Real Short Video Cards (16s - 28s) -->
+    <section class="center-cards-stage" aria-label="Three Horizontally Aligned Real Video Cards">
+      <div class="stage-pitch-banner">
+        <span class="holographic-pill" style="margin-bottom:10px;">
+          MULTIMODAL FRAME + 10S AUDIO → SCHEMA-AWARE LLM → QLOO TASTE AI
+        </span>
+        <h1>Cultural discovery and contextual matches from what is seen and heard.</h1>
+        <p>
+          Select one of the <strong>3 real short videos</strong> (16s–28s) below, pause at any timestamp to capture the live video frame, and inspect how the LLM plans and executes live Qloo <code>/search</code> and <code>/v2/insights</code> queries.
+        </p>
+      </div>
+
+      <!-- Horizontally Aligned Cards Row -->
+      <div class="aligned-cards-row" id="stageAlignedCardsRow">
+        <!-- Populated dynamically by app.js -->
+      </div>
+
+      <!-- Quick Scene Time-Bucket Switcher on Stage -->
+      <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px;">
+        <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-secondary);">
+          SCENE TIME-BUCKET SNAPSHOT:
+        </span>
+        <button type="button" class="pill-btn stage-bucket-btn primary-dark" data-bucket="5" style="padding:6px 13px; font-size:11.5px;">
+          00:05 Frame
+        </button>
+        <button type="button" class="pill-btn stage-bucket-btn" data-bucket="10" style="padding:6px 13px; font-size:11.5px;">
+          00:10 Frame
+        </button>
+        <button type="button" class="pill-btn stage-bucket-btn" data-bucket="15" style="padding:6px 13px; font-size:11.5px;">
+          00:15 Frame
+        </button>
+      </div>
+    </section>
+
+    <!-- Right Column: Algorithm Pipeline Card (Zero Fake Social Metrics) -->
+    <aside class="right-editorial-card" aria-label="Selected Scene Algorithm Summary">
+      <div class="editorial-counter" id="stageRightCounter">
+        <strong>SCENE 01</strong> / 03
+      </div>
+      <div class="editorial-kicker" id="stageRightKicker">
+        MULTIMODAL ALGORITHM PROOF
+      </div>
+      <h2 class="editorial-serif-title" id="stageRightTitle">
+        Loading scene...
+      </h2>
+      <div class="editorial-creator" id="stageRightCreator">
+        <strong>Qloo Taste AI Pipeline</strong>
+      </div>
+
+      <!-- 3 Real Technical Telemetry Metrics -->
+      <div class="editorial-stats-row">
+        <div class="ed-stat-item">
+          <strong id="stageStatSeeds">—</strong>
+          <span>Qloo Seeds</span>
+        </div>
+        <div class="ed-stat-item">
+          <strong id="stageStatAffinity">—</strong>
+          <span>Avg. Affinity</span>
+        </div>
+        <div class="ed-stat-item">
+          <strong id="stageStatDuration">—</strong>
+          <span>Clip Length</span>
+        </div>
+      </div>
+
+      <!-- Active Scene Resolved Qloo Seeds & Planned URNs Preview -->
+      <div style="background:#F7F6F2; border-radius:12px; padding:11px 13px; border:1px solid var(--border-subtle); font-size:12px; color:var(--text-secondary);">
+        <div style="font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--accent-primary); margin-bottom:4px;">
+          LLM URN PLANNER → QLOO /SEARCH &amp; /V2/INSIGHTS
+        </div>
+        <div id="stageRightImpulsePreview" style="color:var(--text-primary); font-weight:500; line-height:1.45;">
+          —
+        </div>
+      </div>
+
+      <div class="editorial-actions-row">
+        <button type="button" class="pill-btn primary-dark" id="btnStageOpenDetail" style="width:100%; justify-content:center;">
+          Open Video &amp; Test Live Algorithm →
+        </button>
+        <button type="button" class="pill-btn" id="btnStageOpenHow" style="width:100%; justify-content:center;">
+          Watch How It Works (Remotion) →
+        </button>
+      </div>
+
+      <div class="editorial-shortcut-notes">
+        Click any card or press <span class="key-chip">←</span> <span class="key-chip">→</span> to switch scenes ·
+        Press <span class="key-chip">Enter</span> to open the live frame capture studio.
+      </div>
+    </aside>
+  </main>
+
+  <!-- ========================================================================
+       SCREEN 2: VIDEO DETAIL & REAL-TIME QLOO ALGORITHM PROOF STUDIO
+       Left Top: Real Video Player + Frame Capture | Left Bottom: 4 Aligned Qloo Insights Cards
+       Right: Algorithm Telemetry Metrics, Captured Frame Preview, Resolved Qloo UUIDs & Live Tester
+       ======================================================================== -->
+  <section id="screenDetail" class="detail-studio-screen hidden" aria-label="Live Video Frame Capture and Qloo Algorithm Proof Studio">
+    <!-- Left Column: Video Player + 4 Aligned Qloo Insights Cards Underneath -->
+    <div class="detail-left-col">
+      <div class="detail-video-frame-card">
+        <div class="detail-video-viewport" id="detailVideoViewport">
+          <video id="detailVideoPlayer" playsinline loop></video>
+          <canvas id="frameCaptureCanvas" class="hidden"></canvas>
+
+          <!-- Floating In-Video Qloo Insights Pins Directly Over Video -->
+          <div class="video-hud-overlay-layer" id="videoHudOverlayLayer">
+            <!-- Populated dynamically by app.js -->
+          </div>
+
+          <!-- Floating Bottom Controls Over Video -->
+          <div class="video-floating-controls">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" class="video-ctrl-btn" id="btnPlayPauseVideo">
+                ▶ Play Video
+              </button>
+              <button type="button" class="video-ctrl-btn capture-btn" id="btnCaptureSceneNow">
+                Capture Frame &amp; Run Live Qloo Analysis
+              </button>
+            </div>
+            <button type="button" class="video-ctrl-btn" id="btnToggleMute">
+              Audio: On
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Timestamp & Bucket Bar Underneath Viewport -->
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding:12px 6px 2px;">
+          <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary);">
+            <span class="pulse-dot green" id="detailPulseIndicator"></span>
+            <span id="detailCaptureStatusText">
+              Pause the video at any frame to capture a live HTML5 &lt;canvas&gt; snapshot and execute LLM + Qloo API analysis.
+            </span>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted);">TIME BUCKETS:</span>
+            <button type="button" class="pill-btn detail-bucket-btn primary-dark" data-bucket="5" style="padding:4px 10px; font-size:11px;">00:05</button>
+            <button type="button" class="pill-btn detail-bucket-btn" data-bucket="10" style="padding:4px 10px; font-size:11px;">00:10</button>
+            <button type="button" class="pill-btn detail-bucket-btn" data-bucket="15" style="padding:4px 10px; font-size:11px;">00:15</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Horizontally Aligned Real-Time Qloo Insights Cards -->
+      <div class="four-ads-section-label">
+        <span id="fourAdsSectionTitle">4 CONTEXTUAL QLOO /V2/INSIGHTS MATCHES SELECTED BY THE LLM FOR THIS SCENE</span>
+        <span id="fourAdsSourceBadge" style="color:var(--accent-emerald);">LIVE QLOO CULTURAL AI</span>
+      </div>
+
+      <div class="four-aligned-ads-grid" id="fourAlignedAdsGrid">
+        <!-- 4 horizontally aligned cards populated by app.js -->
+      </div>
+    </div>
+
+    <!-- Right Column: Algorithm Telemetry, Captured Frame Proof & Live Qloo Inspector -->
+    <div class="detail-right-col">
+      <div class="detail-top-tags-row" id="detailCategoryTags">
+        <!-- Populated dynamically by app.js -->
+      </div>
+
+      <h1 class="detail-serif-heading" id="detailSerifHeading">
+        Loading Scene...
+      </h1>
+
+      <div class="detail-author-line" id="detailAuthorLine">
+        <!-- Technical pipeline line populated by app.js -->
+      </div>
+
+      <!-- 4-Column Divided Algorithm Telemetry Grid -->
+      <div class="detail-metrics-grid">
+        <div class="metric-cell">
+          <span class="metric-big-num" id="metricAffinity">—</span>
+          <span class="metric-label">QLOO AFFINITY SCORE</span>
+        </div>
+        <div class="metric-cell">
+          <span class="metric-big-num" id="metricSeedCount">—</span>
+          <span class="metric-label">QLOO /SEARCH SEEDS</span>
+        </div>
+        <div class="metric-cell">
+          <span class="metric-big-num" id="metricBucketTime">T=00:05</span>
+          <span class="metric-label">CAPTURED BUCKET</span>
+        </div>
+        <div class="metric-cell">
+          <span class="metric-big-num" id="metricLatency">—</span>
+          <span class="metric-label">PIPELINE LATENCY</span>
+        </div>
+      </div>
+
+      <!-- Extracted Cultural Signal & Seed Entity UUID Pills -->
+      <div class="signal-tags-wrap" id="detailSignalTags">
+        <!-- Populated dynamically by app.js -->
+      </div>
+
+      <!-- Action Buttons Row -->
+      <div class="detail-action-buttons-row">
+        <button type="button" class="pill-btn" id="btnBackToStage">
+          ← Back to 3-Video Showcase
+        </button>
+        <button type="button" class="pill-btn primary-dark" id="btnForceLiveRefresh">
+          Capture Live Frame &amp; Force Live API Call
+        </button>
+        <button type="button" class="pill-btn" id="btnCopyOfferText">
+          Copy Qloo JSON Proof
+        </button>
+      </div>
+
+      <!-- Algorithm Proof Card -->
+      <div class="postalamak-card">
+        <div class="postalamak-header">
+          <span class="postalamak-kicker">ALGORITHM PROOF · SELECTED QLOO /V2/INSIGHTS ENTITY &amp; CAUSAL RATIONALE</span>
+          <span class="ad-cat-pill" id="selectedOfferUrnBadge">urn:entity:brand</span>
+        </div>
+
+        <div class="offer-Spotlight-box">
+          <div class="offer-spotlight-top">
+            <div>
+              <div class="offer-entity-title" id="selectedOfferTitle">—</div>
+              <div id="selectedOfferHook" style="font-size:13px; color:var(--accent-primary); font-weight:600; margin-top:2px;">
+                —
+              </div>
+            </div>
+            <span class="coupon-pill" id="selectedOfferCoupon" title="Click to copy reference code" style="cursor:pointer;">
+              —
+            </span>
+          </div>
+
+          <p class="why-this-ad-text" id="selectedOfferReasoning">
+            —
+          </p>
+
+          <div id="selectedOfferQlooDescription" style="font-size:11.5px; color:var(--text-secondary); background:#FFFFFF; padding:8px 10px; border-radius:8px; border:1px solid var(--border-subtle);">
+            —
+          </div>
+
+          <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding-top:4px;">
+            <span id="selectedOfferQlooMeta" style="font-family:var(--font-mono); font-size:11px; color:var(--text-secondary);">
+              Qloo Entity UUID: —
+            </span>
+            <span id="selectedOfferKeywords" style="font-family:var(--font-mono); font-size:10.5px; color:var(--accent-primary);">
+            </span>
+          </div>
+        </div>
+
+        <!-- Captured Frame Thumbnail + Visual/Audio Breakdown -->
+        <div class="signals-two-col">
+          <div class="signal-mini-box">
+            <strong>CAPTURED FRAME VISUAL ANALYSIS (&lt;CANVAS&gt;)</strong>
+            <div style="display:flex; gap:10px; align-items:flex-start; margin-top:4px;">
+              <img
+                id="capturedFramePreviewImg"
+                src=""
+                alt="Captured Video Frame"
+                style="width:88px; height:52px; object-fit:cover; border-radius:8px; border:1px solid var(--border-strong); flex-shrink:0;"
+              />
+              <span id="detailVisualSummary">—</span>
+            </div>
+          </div>
+          <div class="signal-mini-box">
+            <strong>10S AUDIO SPECTRUM &amp; QLOO /SEARCH SEEDS</strong>
+            <span id="detailAudioSummary">—</span>
+            <div id="resolvedQlooSeedsList" style="margin-top:6px; font-family:var(--font-mono); font-size:10.5px; color:var(--accent-primary);"></div>
+            <div id="plannedQlooUrnsList" style="margin-top:4px; font-family:var(--font-mono); font-size:10.5px; color:var(--accent-emerald);"></div>
+          </div>
+        </div>
+
+        <!-- Interactive Live Qloo API Explorer inside Studio -->
+        <div style="border-top:1px solid var(--border-subtle); padding-top:12px;">
+          <div class="postalamak-kicker" style="margin-bottom:8px;">
+            DIRECT LIVE QLOO API EXPLORER (/search → /v2/insights)
+          </div>
+          <div class="qloo-explorer-bar">
+            <input
+              type="text"
+              id="qlooExploreQueryInput"
+              placeholder="Enter any cultural seed query (e.g., Espresso, Kyoto, Acoustic Guitar)..."
+              value="Espresso"
+            />
+            <select id="qlooExploreTypeSelect" aria-label="Target Qloo URN Category">
+              <option value="brand">Brand (urn:entity:brand)</option>
+              <option value="place">Place (urn:entity:place)</option>
+              <option value="destination">Destination (urn:entity:destination)</option>
+              <option value="book">Book (urn:entity:book)</option>
+              <option value="movie">Movie (urn:entity:movie)</option>
+              <option value="artist">Music Artist (urn:entity:artist)</option>
+              <option value="podcast">Podcast (urn:entity:podcast)</option>
+              <option value="tv_show">TV Show (urn:entity:tv_show)</option>
+              <option value="videogame">Video Game (urn:entity:videogame)</option>
+            </select>
+            <button type="button" class="pill-btn primary-dark" id="btnRunQlooExplore" style="padding:8px 16px; font-size:12px;">
+              Query Live Qloo API
+            </button>
+          </div>
+          <div id="qlooExploreResultBox" style="margin-top:8px; font-size:12px; color:var(--text-secondary); line-height:1.45;">
+            Test any cultural seed directly against the live Qloo <code>/search</code> and <code>/v2/insights</code> endpoints across all 9 supported entity URNs.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       SCREEN 3: HOW IT WORKS (REMOTION LIGHT-MODE ARCHITECTURE WALKTHROUGH)
+       ======================================================================== -->
+  <section id="screenHowItWorks" class="how-works-screen hidden" aria-label="How ScenePulse Works — Remotion Architecture Walkthrough">
+    <div class="how-works-top-grid">
+      <!-- Left: Remotion Video Walkthrough Player -->
+      <div class="remotion-player-card">
+        <div class="remotion-player-header">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="pulse-dot green"></span>
+            <span style="font-family:var(--font-mono); font-size:11px; font-weight:700; color:var(--text-primary); letter-spacing:0.06em;">
+              REMOTION ARCHITECTURE WALKTHROUGH · 1280×720 · LIGHT EDITORIAL PALETTE
+            </span>
+          </div>
+          <span class="demo-pill">20s LOOP · 4 STAGES</span>
+        </div>
+
+        <div class="remotion-video-wrap">
+          <video
+            id="remotionWalkthroughVideo"
+            src="/videos/how-it-works.webm"
+            poster="/videos/how-it-works.jpg"
+            controls
+            loop
+            playsinline
+            preload="metadata"
+          ></video>
+        </div>
+
+        <!-- Interactive Stage Jump Bar for the Remotion Video -->
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding-top:12px;">
+          <span style="font-family:var(--font-mono); font-size:10.5px; font-weight:700; color:var(--text-muted);">
+            JUMP TO REMOTION STAGE:
+          </span>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <button type="button" class="pill-btn remotion-chapter-btn primary-dark" data-time="0" style="padding:5px 11px; font-size:11px;">
+              01 · Frame + 10s Audio (0:00)
+            </button>
+            <button type="button" class="pill-btn remotion-chapter-btn" data-time="5" style="padding:5px 11px; font-size:11px;">
+              02 · LLM Schema Planner (0:05)
+            </button>
+            <button type="button" class="pill-btn remotion-chapter-btn" data-time="10" style="padding:5px 11px; font-size:11px;">
+              03 · Qloo /v2/insights (0:10)
+            </button>
+            <button type="button" class="pill-btn remotion-chapter-btn" data-time="15" style="padding:5px 11px; font-size:11px;">
+              04 · 5s Bucket Cache (0:15)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Architectural Principles & LLM + Qloo Integration Summary -->
+      <div class="how-works-summary-card">
+        <div class="editorial-kicker">
+          ARCHITECTURAL BLUEPRINT · REMOTION SOURCE IN /frontend/remotion/ScenePulseHowItWorks.tsx
+        </div>
+        <h2 class="editorial-serif-title" style="font-size:28px;">
+          Teaching the LLM the full Qloo API schema for context-accurate cultural discovery.
+        </h2>
+        <p style="font-size:13.5px; color:var(--text-secondary); line-height:1.55;">
+          Instead of hardcoding the same 4 entity categories for every video, <strong>ScenePulse by Flownie</strong> injects the complete Qloo API specification into the LLM system prompt. When a viewer pauses any video, the LLM inspects the captured frame and 10s audio window, extracts 3 concrete Qloo <code>/search</code> seeds, and dynamically selects the <strong>4 most contextually relevant Qloo <code>/v2/insights</code> URNs</strong>.
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:10px; background:#F7F6F2; padding:14px; border-radius:12px; border:1px solid var(--border-subtle); font-size:12.5px;">
+          <div>
+            <strong style="color:var(--accent-primary); font-family:var(--font-mono); font-size:11px;">01 · CONTEXT-AWARE URN FILTERING</strong>
+            <div style="color:var(--text-secondary); margin-top:2px;">
+              For an artisanal espresso pour or Kyoto transit clip, the LLM selects <code>brand</code>, <code>place</code>, <code>destination</code>, and <code>book</code>/<code>movie</code> — automatically excluding unrelated categories like <code>videogame</code> unless gaming or cyberpunk aesthetics are actually present.
+            </div>
+          </div>
+          <div>
+            <strong style="color:var(--accent-primary); font-family:var(--font-mono); font-size:11px;">02 · MULTI-PROVIDER LLM ROUTING (OPENROUTER / DEEPSEEK READY)</strong>
+            <div style="color:var(--text-secondary); margin-top:2px;">
+              Supports OpenRouter (<code>OPENROUTER_API_KEY</code> for DeepSeek V3/V4 and Vision models) alongside OpenAI-compatible and Gemini endpoints via unified Laravel configuration.
+            </div>
+          </div>
+          <div>
+            <strong style="color:var(--accent-primary); font-family:var(--font-mono); font-size:11px;">03 · 5-SECOND TIME-BUCKET SQLITE SHIELD</strong>
+            <div style="color:var(--text-secondary); margin-top:2px;">
+              Video timestamps are bucketed to 5-second windows (<code>floor(t / 5) * 5</code>) so public visitors receive instant, verified Qloo responses in under 15ms without exhausting API quotas.
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:auto;">
+          <button type="button" class="pill-btn primary-dark" id="btnHowToStudio">
+            Open Live Frame &amp; Qloo Proof Studio →
+          </button>
+          <button type="button" class="pill-btn" id="btnHowToStage">
+            ← Back to 3-Video Showcase
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4-Stage Pipeline Step Cards -->
+    <div class="how-steps-grid">
+      <article class="how-step-card">
+        <span class="how-step-num">STAGE 01 · CLIENT TELEMETRY</span>
+        <h3>HTML5 &lt;canvas&gt; Frame + 10s Audio Capture</h3>
+        <p>
+          When playback pauses at timestamp <code>T</code>, the browser draws the exact video frame onto an offscreen <code>&lt;canvas&gt;</code> (<code>480×270</code> Base64 JPEG) and packages it with the trailing 10-second audio spectrum summary.
+        </p>
+        <code>canvas.toDataURL('image/jpeg', 0.72) + audio_10s_summary</code>
+      </article>
+
+      <article class="how-step-card">
+        <span class="how-step-num">STAGE 02 · SCHEMA-AWARE LLM</span>
+        <h3>Multimodal Extraction &amp; Dynamic URN Planning</h3>
+        <p>
+          The LLM receives the visual frame, 10s audio descriptors, and the full catalog of 9 Qloo entity URNs. It outputs structured JSON containing 3 <code>qloo_seed_queries</code> and 4 <code>qloo_target_requests</code> with causal rationales.
+        </p>
+        <code>qloo_target_requests: [brand, place, destination, book]</code>
+      </article>
+
+      <article class="how-step-card">
+        <span class="how-step-num">STAGE 03 · LIVE QLOO TASTE AI</span>
+        <h3>Entity Resolution (/search) &amp; Cross-Domain (/v2/insights)</h3>
+        <p>
+          <code>QlooTasteService</code> resolves each seed string to a canonical Qloo UUID via <code>GET /search</code>, then queries <code>GET /v2/insights</code> for each LLM-selected URN using <code>signal.interests.entities</code>.
+        </p>
+        <code>GET /v2/insights?filter.type=urn:entity:brand&amp;signal.interests.entities=...</code>
+      </article>
+
+      <article class="how-step-card">
+        <span class="how-step-num">STAGE 04 · PRODUCTION CACHE</span>
+        <h3>5-Second Time-Bucket SQLite Persistence</h3>
+        <p>
+          Resolved Qloo UUIDs, affinity scores, and LLM causal hooks are indexed by <code>(video_id, time_bucket)</code>. Subsequent requests hit the warm cache in <code>&lt;15ms</code>, while Force Live bypasses cache on demand.
+        </p>
+        <code>UNIQUE (scene_pulse_video_id, time_bucket) · 5s window</code>
+      </article>
+    </div>
+
+    <!-- Full Qloo URN Schema Reference Table Taught to the LLM -->
+    <div class="urn-schema-card">
+      <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;">
+        <div>
+          <span class="postalamak-kicker">QLOO API SPECIFICATION INJECTED INTO THE LLM SYSTEM PROMPT</span>
+          <h3 style="font-family:var(--font-serif); font-size:21px; font-weight:400; margin-top:2px;">
+            Supported Qloo <code>/v2/insights</code> Entity URNs &amp; Contextual Selection Rules
+          </h3>
+        </div>
+        <span class="holographic-pill">9 SUPPORTED QLOO URNS</span>
+      </div>
+
+      <table class="urn-table">
+        <thead>
+          <tr>
+            <th>Qloo Filter Type URN</th>
+            <th>Domain Key</th>
+            <th>Required Qloo Parameters</th>
+            <th>LLM Scene Selection Rule</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>urn:entity:brand</code></td>
+            <td><code>brand</code></td>
+            <td><code>signal.interests.entities</code></td>
+            <td>Selected when physical products, craft goods, apparel, or lifestyle equipment appear in the frame.</td>
+          </tr>
+          <tr>
+            <td><code>urn:entity:place</code></td>
+            <td><code>place</code></td>
+            <td><code>signal.interests.entities</code> + <code>filter.location.query</code></td>
+            <td>Selected for cafes, restaurants, architectural landmarks, or venues (LLM supplies the city such as Seattle, Kyoto, or Nashville).</td>
+          </tr>
+          <tr>
+            <td><code>urn:entity:destination</code></td>
+            <td><code>destination</code></td>
+            <td><code>signal.interests.entities</code></td>
+            <td>Selected for travel, transit, regional culture, architecture, or scenic outdoor atmosphere.</td>
+          </tr>
+          <tr>
+            <td><code>urn:entity:book</code></td>
+            <td><code>book</code></td>
+            <td><code>signal.interests.entities</code></td>
+            <td>Selected for artisanal craft, intellectual depth, design monographs, culinary guides, or cultural essays.</td>
+          </tr>
+          <tr>
+            <td><code>urn:entity:movie</code></td>
+            <td><code>movie</code></td>
+            <td><code>signal.interests.entities</code></td>
+            <td>Selected when cinematic lighting, urban transit, or atmospheric storytelling defines the frame.</td>
+          </tr>
+          <tr>
+            <td><code>urn:entity:artist</code></td>
+            <td><code>artist</code></td>
+            <td><code>signal.interests.entities</code></td>
+            <td>Selected when musical instruments, live performance, or distinct rhythmic/acoustic audio is present in the 10s window.</td>
+          </tr>
+          <tr>
+            <td><code>urn:entity:podcast</code></td>
+            <td><code>podcast</code></td>
+            <td><code>signal.interests.entities</code></td>
+            <td>Selected for spoken-word, acoustic storytelling, songwriting sessions, or deep-dive documentary scenes.</td>
+          </tr>
+          <tr>
+            <td><code>urn:entity:tv_show</code></td>
+            <td><code>tv_show</code></td>
+            <td><code>signal.interests.entities</code></td>
+            <td>Selected for serialized documentary, culinary series, or travelogue aesthetics.</td>
+          </tr>
+          <tr>
+            <td><code>urn:entity:videogame</code></td>
+            <td><code>videogame</code></td>
+            <td><code>signal.interests.entities</code></td>
+            <td>Restricted by the LLM prompt: selected ONLY when gaming, esports, sci-fi, or interactive digital visuals are present (never on coffee or acoustic scenes).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Toast Notification -->
+  <div
+    id="toastBanner"
+    class="hidden"
+    style="position:fixed; bottom:24px; right:24px; z-index:999; background:#14141F; color:#FFFFFF; padding:12px 20px; border-radius:12px; box-shadow:0 16px 36px rgba(20,20,31,0.22); font-size:13px; font-weight:600; border:1px solid rgba(255,255,255,0.18);"
+  ></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

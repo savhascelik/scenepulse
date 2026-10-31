@@ -1,0 +1,21 @@
+# Prevent local secrets, databases, and dev caches from entering Docker layers
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+vendor
+node_modules
+storage/logs/*.log
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*.php
+storage/database/*.sqlite*
+database/*.sqlite*
+bootstrap/cache/*.php
+.phpunit.cache
+.phpunit.result.cache
+tests
+.idea
+.vscode
+*.md

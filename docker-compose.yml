@@ -1,0 +1,55 @@
+services:
+  backend:
+    container_name: scenepulse-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: ./backend/.env
+        required: false
+    ports:
+      - "127.0.0.1:8098:8000"
+    environment:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: "/var/www/html/storage/database/database.sqlite"
+      AI_DEFAULT_PROVIDER: "${AI_DEFAULT_PROVIDER:-nebius}"
+      QLOO_SERVER_URL: "${QLOO_SERVER_URL:-https://hackathon.api.qloo.com}"
+      QLOO_BASE_URL: "${QLOO_BASE_URL:-https://hackathon.api.qloo.com}"
+      QLOO_API_KEY: "${QLOO_API_KEY:-}"
+      NEBIUS_BASE_URL: "${NEBIUS_BASE_URL:-https://api.tokenfactory.nebius.com/v1}"
+      NEBIUS_API_KEY: "${NEBIUS_API_KEY:-}"
+      NEBIUS_DEFAULT_MODEL: "nvidia/nemotron-3-super-120b-a12b"
+      NEBIUS_FAST_MODEL: "Qwen/Qwen3-30B-A3B-Instruct-2507"
+      NEBIUS_VISION_MODEL: "google/gemma-3-27b-it"
+      OPENROUTER_BASE_URL: "https://openrouter.ai/api/v1"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      CORS_ALLOWED_ORIGINS: "*"
+    volumes:
+      - scenepulse_sqlite:/var/www/html/storage/database
+    networks:
+      - scenepulse-net
+
+  frontend:
+    container_name: scenepulse-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5195:5173"
+    environment:
+      PORT: "5173"
+      HOST: "0.0.0.0"
+      BACKEND_INTERNAL_URL: "http://backend:8000"
+    depends_on:
+      - backend
+    networks:
+      - scenepulse-net
+
+networks:
+  scenepulse-net:
+    driver: bridge
+
+volumes:
+  scenepulse_sqlite:
