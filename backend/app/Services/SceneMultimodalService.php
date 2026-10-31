@@ -23,28 +23,30 @@ class SceneMultimodalService
     {
         $startTime = microtime(true);
 
+        $isCustomVideo = !empty($payload['custom_video_name']);
         $videoIdOrSlug = $payload['video_id'] ?? $payload['video_slug'] ?? null;
         $videoItem = null;
-        if ($videoIdOrSlug !== null) {
+        if (!$isCustomVideo && $videoIdOrSlug !== null) {
             $videoItem = is_numeric($videoIdOrSlug)
                 ? VideoItem::find((int) $videoIdOrSlug)
                 : VideoItem::where('slug', (string) $videoIdOrSlug)->first();
         }
 
-        if (!$videoItem) {
-            $videoItem = VideoItem::orderBy('sort_order')->first();
+        $fallbackVideoItem = VideoItem::orderBy('sort_order')->first();
+        if (!$isCustomVideo && !$videoItem) {
+            $videoItem = $fallbackVideoItem;
         }
 
         $timestampSeconds = max(0, (int) round((float) ($payload['timestamp_seconds'] ?? 5)));
         $timeBucket = (int) (floor($timestampSeconds / 5) * 5);
         $timestampFormatted = sprintf('%02d:%02d', intdiv($timestampSeconds, 60), $timestampSeconds % 60);
 
-        $customFrameHash = !empty($payload['custom_video_name'])
-            ? 'custom_' . substr(md5((string) $payload['custom_video_name'] . '_' . $timeBucket), 0, 16)
+        $customFrameHash = $isCustomVideo
+            ? 'custom_' . substr(md5((string) $payload['custom_video_name'] . '_' . $timeBucket . '_' . strlen((string) ($payload['frame_image_base64'] ?? ''))), 0, 16)
             : ('video_' . ($videoItem?->id ?? 0) . '_bucket_' . $timeBucket);
 
-        // 1. Check 5-Second Time-Bucket SQLite Cache (only when not forcing live refresh)
-        if (!$forceRefresh) {
+        // 1. Check 5-Second Time-Bucket SQLite Cache (only when not forcing live refresh and not a fresh custom frame)
+        if (!$forceRefresh && !$isCustomVideo) {
             $cached = ScenePulseImpulse::where('frame_hash', $customFrameHash)->first();
 
             if (!$cached && $videoItem && empty($payload['frame_image_base64'])) {
@@ -73,8 +75,9 @@ class SceneMultimodalService
         // 3. Query Live Qloo Cultural AI: Step A -> GET /search for seed entity UUIDs
         $qlooStartTime = microtime(true);
         $llmSeeds = $extracted['qloo_seed_queries'] ?? [];
-        $videoSeeds = $videoItem?->qloo_seed_queries ?? [];
-        $seedQueries = array_slice(array_values(array_unique(array_filter(array_merge($videoSeeds, $llmSeeds)))), 0, 4);
+        $videoSeeds = $isCustomVideo ? [] : ($videoItem?->qloo_seed_queries ?? []);
+        // Put LLM-extracted seeds FIRST so live visual/audio analysis drives Qloo /search
+        $seedQueries = array_slice(array_values(array_unique(array_filter(array_merge($llmSeeds, $videoSeeds)))), 0, 4);
 
         $resolvedEntities = $this->qlooService->resolveEntities($seedQueries);
         $entityIds = array_column($resolvedEntities, 'entity_id');
@@ -136,7 +139,7 @@ class SceneMultimodalService
         return ScenePulseImpulse::updateOrCreate(
             ['frame_hash' => $customFrameHash],
             [
-                'video_item_id' => $videoItem?->id,
+                'video_item_id' => $videoItem?->id ?? $fallbackVideoItem?->id,
                 'time_bucket' => $timeBucket,
                 'timestamp_formatted' => $timestampFormatted,
                 'scene_headline' => $extracted['scene_headline'],
@@ -247,10 +250,17 @@ class SceneMultimodalService
         $dailyUsed = AiUsageLog::whereDate('created_at', now()->toDateString())->count();
         $dailyCap = (int) config('ai.daily_live_llm_cap', 250);
 
-        $audioSummary = (string) ($payload['audio_10s_summary']
-            ?? implode(', ', $videoItem?->default_audio_signals ?? []));
-        $visualHint = (string) ($payload['visual_hint']
-            ?? implode(', ', $videoItem?->default_visual_signals ?? []));
+        $isCustomUpload = !empty($payload['custom_video_name']);
+        $audioSummary = !$isCustomUpload && !empty($payload['audio_10s_summary'])
+            ? (string) $payload['audio_10s_summary']
+            : ($isCustomUpload
+                ? 'Live 10-second broadcast/video audio track from uploaded stream'
+                : implode(', ', $videoItem?->default_audio_signals ?? []));
+        $visualHint = !$isCustomUpload && !empty($payload['visual_hint'])
+            ? (string) $payload['visual_hint']
+            : ($isCustomUpload
+                ? 'Inspect all visible on-screen text, chyrons, headlines, people, architecture, and objects directly in the captured video frame image.'
+                : implode(', ', $videoItem?->default_visual_signals ?? []));
         $videoTitle = $payload['custom_video_name'] ?? $videoItem?->title ?? 'Video Stream';
 
         $hasImage = !empty($payload['frame_image_base64']) && str_starts_with((string) $payload['frame_image_base64'], 'data:image/');
@@ -265,84 +275,42 @@ class SceneMultimodalService
             $systemPrompt = <<<'PROMPT'
 You are the ScenePulse Multimodal (Paused Video Frame + 10-Second Audio Window) Cultural Intelligence & Qloo API Query Planner.
 
-Your job has two connected stages:
 STAGE 1 — MULTIMODAL SCENE EXTRACTION:
-Inspect the captured video frame and the 10-second audio telemetry. Extract the concrete objects, aesthetics, craft, acoustic instruments/frequencies, and cultural signals genuinely present in the scene.
+Inspect the captured video frame image (including any visible on-screen text, headlines, tickers, landmarks, people, or objects) and the 10-second audio context.
 
 STAGE 2 — DYNAMIC QLOO API ORCHESTRATION:
-You directly control how our backend queries the official Qloo Taste AI API (`https://hackathon.api.qloo.com`).
-Here is the exact Qloo API architecture you are planning for:
-1. `GET /search?query={seed_name}`
-   - Resolves concrete cultural entity names (`qloo_seed_queries`) into official Qloo `entity_id` UUIDs.
-   - Provide 4 specific, real-world entity names in `qloo_seed_queries` (e.g., "Blue Bottle Coffee", "Espresso", "Bialetti", "Kyoto", "Muji", "Andy McKee", "Taylor Guitars") that exist in Qloo's knowledge graph.
-2. `GET /v2/insights?filter.type={urn}&signal.interests.entities={resolved_seed_uuids}`
-   - Takes the UUIDs resolved from `/search` and returns cross-domain cultural matches.
-   - Supported `filter.type` domain keys you can choose from:
-     * `"brand"` (`urn:entity:brand`) -> Consumer brands, specialty equipment, hardware, fashion, roasters, gear.
-     * `"place"` (`urn:entity:place`) -> Physical cafes, specialty coffee bars, restaurants, cultural venues. Requires `"location_query"` (city name, e.g. "Seattle", "Tokyo", "Kyoto", "New York", "London", "Nashville").
-     * `"destination"` (`urn:entity:destination`) -> Cities, cultural neighborhoods, travel destinations.
-     * `"artist"` (`urn:entity:artist`) -> Musicians, composers, bands, acoustic/ambient performers matching the 10s audio window.
-     * `"movie"` (`urn:entity:movie`) -> Films, cinema, and visual storytelling that share the scene's atmosphere.
-     * `"book"` (`urn:entity:book`) -> Books, culinary/design monographs, literature.
-     * `"tv_show"` (`urn:entity:tv_show`) -> Television series and documentaries.
-     * `"podcast"` (`urn:entity:podcast`) -> Podcasts and audio programs.
-     * `"videogame"` (`urn:entity:videogame`) -> Video games.
+You control how our backend queries the official Qloo Taste AI API (`https://hackathon.api.qloo.com`):
+1. `GET /search?query={seed_name}`:
+   - Provide 4 specific, real-world entity names in `qloo_seed_queries` (brands, companies, cities, landmarks, media networks, artists, or public figures visible/implied in the frame, e.g., "Google", "CNBC", "San Francisco", "Bloomberg", "Blue Bottle Coffee", "Kyoto", "Taylor Guitars") that exist in Qloo's knowledge graph.
+2. `GET /v2/insights?filter.type={urn}&signal.interests.entities={resolved_seed_uuids}`:
+   - Choose 4 DISTINCT `domain` keys from: `"brand"`, `"place"`, `"destination"`, `"artist"`, `"movie"`, `"book"`, `"tv_show"`, `"podcast"`, `"videogame"`.
+   - For `"place"`, provide a relevant city in `"location_query"` (e.g., `"San Francisco"`, `"New York"`, `"Seattle"`, `"Kyoto"`, `"Tokyo"`).
+   - Pick domains that genuinely match THIS video frame (e.g. for tech/business news broadcasts pick `["brand", "tv_show", "book", "destination"]`; for coffee pick `["brand", "place", "artist", "book"]`).
 
-CRITICAL RULE FOR SELECTING `ad_blueprints` (4 Qloo `/v2/insights` calls):
-- Choose 4 DISTINCT `domain` values from the list above that make 100% contextual sense for THIS specific video frame and audio!
-- Do NOT pick `"videogame"` for coffee brewing, culinary, architecture, or acoustic instrument scenes unless the video is genuinely about gaming or interactive digital media.
-- For example:
-  * Coffee / Espresso scene -> pick `["brand", "place", "artist", "book"]` (with `location_query: "Seattle"` or `"Tokyo"` for `"place"`).
-  * Night Architecture / Travel scene -> pick `["destination", "place", "movie", "brand"]` (with `location_query: "Kyoto"` for `"place"`).
-  * Acoustic Guitar / Music performance -> pick `["artist", "brand", "place", "movie"]` (with `location_query: "Nashville"` for `"place"`).
-
-Return ONLY a valid JSON object in English (no markdown fences, no Turkish):
+Return ONLY a valid, compact JSON object in English (no markdown fences):
 {
-  "scene_headline": "Concise English editorial headline summarizing the captured frame and 10s audio signal",
+  "scene_headline": "Concise English headline summarizing the exact captured frame and audio context",
   "visual_signals": [
     "Concrete visual observation 1 from the frame",
     "Concrete visual observation 2",
-    "Concrete visual observation 3",
-    "Concrete visual observation 4"
+    "Concrete visual observation 3"
   ],
   "audio_10s_signals": [
-    "10s acoustic/audio observation 1",
-    "Audio observation 2",
-    "Audio observation 3",
-    "Audio observation 4"
+    "10s audio/speech/acoustic observation 1",
+    "Audio observation 2"
   ],
   "qloo_seed_queries": [
-    "Concrete Qloo /search Seed 1",
-    "Concrete Qloo /search Seed 2",
-    "Concrete Qloo /search Seed 3",
-    "Concrete Qloo /search Seed 4"
+    "Real Entity Seed 1",
+    "Real Entity Seed 2",
+    "Real Entity Seed 3",
+    "Real Entity Seed 4"
   ],
-  "qloo_taste_tags": ["#Tag1", "#Tag2", "#Tag3", "#Tag4"],
+  "qloo_taste_tags": ["#Tag1", "#Tag2", "#Tag3"],
   "ad_blueprints": [
-    {
-      "domain": "brand",
-      "location_query": null,
-      "ad_headline": "English contextual hook explaining the brand/equipment relevance to this scene",
-      "why_this_ad": "Technical explanation of why the visual frame + 10s audio signals map to this Qloo /v2/insights URN"
-    },
-    {
-      "domain": "place",
-      "location_query": "Tokyo",
-      "ad_headline": "English contextual hook for a real-world venue or cafe matching this atmosphere",
-      "why_this_ad": "Technical explanation of why urn:entity:place is queried for this scene"
-    },
-    {
-      "domain": "artist",
-      "location_query": null,
-      "ad_headline": "English contextual hook connecting the 10s audio spectrum to musical artists",
-      "why_this_ad": "Technical explanation of why urn:entity:artist matches the acoustic telemetry"
-    },
-    {
-      "domain": "book",
-      "location_query": null,
-      "ad_headline": "English contextual hook for cultural publications or cinema matching the aesthetic",
-      "why_this_ad": "Technical explanation of why this URN completes the 4-domain Qloo Taste Graph profile"
-    }
+    {"domain": "brand", "location_query": null},
+    {"domain": "tv_show", "location_query": null},
+    {"domain": "destination", "location_query": "San Francisco"},
+    {"domain": "book", "location_query": null}
   ]
 }
 PROMPT;
@@ -362,11 +330,11 @@ PROMPT;
             try {
                 $headers = [];
                 if ($provider === 'openrouter') {
-                    $headers['HTTP-Referer'] = 'https://scenepulse.flownie.com';
-                    $headers['X-Title'] = 'ScenePulse by Flownie';
+                    $headers['HTTP-Referer'] = 'https://pulse.flownie.com';
+                    $headers['X-Title'] = 'ScenePulse';
                 }
 
-                $response = Http::timeout(20)
+                $response = Http::timeout(25)
                     ->withToken($apiKey)
                     ->withHeaders($headers)
                     ->post("{$baseUrl}/chat/completions", [
@@ -375,13 +343,16 @@ PROMPT;
                             ['role' => 'system', 'content' => $systemPrompt],
                             ['role' => 'user', 'content' => $hasImage ? $userContent : $userText],
                         ],
-                        'temperature' => 0.2,
-                        'max_tokens' => 1100,
+                        'temperature' => 0.15,
+                        'max_tokens' => 450,
                     ]);
 
                 if ($response->successful()) {
                     $rawContent = (string) ($response->json('choices.0.message.content') ?? '');
                     $cleanJson = trim(preg_replace('/^```(?:json)?\s*|\s*```$/m', '', $rawContent));
+                    if (preg_match('/\{[\s\S]*\}/', $cleanJson, $matches)) {
+                        $cleanJson = $matches[0];
+                    }
                     $decoded = json_decode($cleanJson, true);
 
                     if (is_array($decoded) && !empty($decoded['scene_headline'])) {
@@ -392,7 +363,7 @@ PROMPT;
                                 'provider_slug' => $provider,
                                 'model_id' => $model,
                                 'prompt_tokens' => (int) ($response->json('usage.prompt_tokens') ?? 400),
-                                'completion_tokens' => (int) ($response->json('usage.completion_tokens') ?? 500),
+                                'completion_tokens' => (int) ($response->json('usage.completion_tokens') ?? 250),
                                 'latency_ms' => 450,
                                 'status' => 'success',
                             ]);
@@ -421,9 +392,9 @@ PROMPT;
             'provider_used' => 'scene-telemetry',
             'model_used' => 'telemetry-direct',
             'scene_headline' => "{$videoTitle} — Frame & 10s Audio Snapshot ({$timestampFormatted})",
-            'visual_signals' => $videoItem?->default_visual_signals ?? [$visualHint],
-            'audio_10s_signals' => $videoItem?->default_audio_signals ?? [$audioSummary],
-            'qloo_seed_queries' => $videoItem?->qloo_seed_queries ?? ['Blue Bottle Coffee', 'Kyoto'],
+            'visual_signals' => $videoItem?->default_visual_signals ?? ['Captured live video frame at ' . $timestampFormatted],
+            'audio_10s_signals' => $videoItem?->default_audio_signals ?? ['10-second audio window at ' . $timestampFormatted],
+            'qloo_seed_queries' => $videoItem?->qloo_seed_queries ?? ['Google', 'San Francisco', 'CNBC'],
             'qloo_taste_tags' => ['#MultimodalFrame', '#Audio10s', '#QlooInsights'],
             'ad_blueprints' => $this->defaultBlueprintsForSlug($videoItem?->slug),
         ];

@@ -241,18 +241,16 @@ class QlooTasteService
 
             $domainMeta = self::SUPPORTED_DOMAINS[$domainKey] ?? self::SUPPORTED_DOMAINS['brand'];
             $urn = $domainMeta['urn'];
-            $cacheKey = 'qloo_live_insights_v6:' . md5($urn . ':' . $locationQuery . ':' . implode(',', $liveEntityIds));
+            $cacheKey = 'qloo_live_insights_v7:' . md5($urn . ':' . $locationQuery . ':' . implode(',', $liveEntityIds));
 
             $entities = Cache::remember($cacheKey, $ttlSeconds, function () use ($baseUrl, $apiKey, $urn, $locationQuery, $liveEntityIds) {
                 $candidateSignalSets = [implode(',', array_slice($liveEntityIds, 0, 5))];
-                foreach ($liveEntityIds as $singleId) {
-                    if (!in_array($singleId, $candidateSignalSets, true)) {
-                        $candidateSignalSets[] = $singleId;
-                    }
+                if (!empty($liveEntityIds[0]) && $candidateSignalSets[0] !== $liveEntityIds[0]) {
+                    $candidateSignalSets[] = $liveEntityIds[0];
                 }
 
                 $locationFallbacks = $urn === 'urn:entity:place'
-                    ? array_values(array_unique([$locationQuery, 'Tokyo', 'New York', 'London']))
+                    ? array_slice(array_values(array_unique(array_filter([$locationQuery, 'New York', 'Tokyo']))), 0, 2)
                     : [''];
 
                 foreach ($locationFallbacks as $loc) {
@@ -267,7 +265,7 @@ class QlooTasteService
                                 $params['filter.location.query'] = $loc;
                             }
 
-                            $response = Http::timeout(12)
+                            $response = Http::timeout(8)
                                 ->withHeaders([
                                     'X-Api-Key' => $apiKey,
                                     'Accept' => 'application/json',
@@ -288,34 +286,60 @@ class QlooTasteService
                                             ? ($affinityRaw <= 1.0 ? round((float) $affinityRaw * 100, 1) : round((float) $affinityRaw, 1))
                                             : round(95.0 - ($idx * 1.5), 1);
 
-                                        $keywords = $item['properties']['keywords'] ?? [];
+                                        $keywords = [];
+                                        $rawKw = $item['properties']['keywords'] ?? [];
+                                        if (is_array($rawKw)) {
+                                            foreach (array_slice($rawKw, 0, 6) as $kwEntry) {
+                                                if (is_string($kwEntry) && trim($kwEntry) !== '') {
+                                                    $keywords[] = trim($kwEntry);
+                                                } elseif (is_array($kwEntry) && !empty($kwEntry['name']) && is_string($kwEntry['name'])) {
+                                                    $keywords[] = trim($kwEntry['name']);
+                                                }
+                                            }
+                                        }
                                         if (empty($keywords) && !empty($item['tags']) && is_array($item['tags'])) {
                                             foreach (array_slice($item['tags'], 0, 4) as $tagObj) {
-                                                if (!empty($tagObj['name'])) {
-                                                    $keywords[] = (string) $tagObj['name'];
+                                                if (is_array($tagObj) && !empty($tagObj['name']) && is_string($tagObj['name'])) {
+                                                    $keywords[] = trim($tagObj['name']);
                                                 }
                                             }
                                         }
 
-                                        $description = (string) (
-                                            $item['properties']['short_description']
-                                            ?? $item['properties']['description']
-                                            ?? $item['properties']['tagline']
-                                            ?? $item['properties']['address']
-                                            ?? $item['disambiguation']
-                                            ?? ''
-                                        );
+                                        $descCandidates = [
+                                            $item['properties']['short_description'] ?? null,
+                                            $item['properties']['description'] ?? null,
+                                            $item['properties']['tagline'] ?? null,
+                                            $item['properties']['address'] ?? null,
+                                            $item['disambiguation'] ?? null,
+                                        ];
+                                        $description = '';
+                                        foreach ($descCandidates as $cand) {
+                                            if (is_string($cand) && trim($cand) !== '') {
+                                                $description = trim($cand);
+                                                break;
+                                            } elseif (is_array($cand)) {
+                                                $nested = $cand['value'] ?? $cand['text'] ?? $cand['formatted'] ?? null;
+                                                if (is_string($nested) && trim($nested) !== '') {
+                                                    $description = trim($nested);
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        $subtypeRaw = $item['subtype'] ?? $urn;
+                                        $subtypeStr = is_string($subtypeRaw) ? $subtypeRaw : $urn;
+                                        $imgRaw = $item['properties']['image']['url'] ?? null;
 
                                         $parsed[] = [
                                             'entity_id' => (string) ($item['entity_id'] ?? $item['id'] ?? ''),
-                                            'name' => (string) $item['name'],
-                                            'urn' => (string) ($item['subtype'] ?? $urn),
+                                            'name' => is_string($item['name']) ? $item['name'] : 'Qloo Entity',
+                                            'urn' => $subtypeStr,
                                             'request_urn' => $urn,
                                             'location_query' => $urn === 'urn:entity:place' ? $loc : null,
                                             'affinity_score' => $affinityPct,
                                             'description' => $description,
                                             'keywords' => array_slice(array_values(array_unique($keywords)), 0, 4),
-                                            'image_url' => $item['properties']['image']['url'] ?? null,
+                                            'image_url' => is_string($imgRaw) ? $imgRaw : null,
                                             'is_live' => true,
                                         ];
                                     }

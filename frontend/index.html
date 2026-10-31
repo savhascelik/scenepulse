@@ -240,12 +240,14 @@
 
           <!-- Floating Bottom Controls Over Video -->
           <div class="video-floating-controls">
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
               <button type="button" class="video-ctrl-btn" id="btnPlayPauseVideo">
                 ▶ Play Video
               </button>
-              <button type="button" class="video-ctrl-btn capture-btn" id="btnCaptureSceneNow">
-                Capture Frame &amp; Run Live Qloo Analysis
+              <button type="button" class="video-ctrl-btn capture-btn-cta" id="btnCaptureSceneNow">
+                <span class="cta-spark-icon">⚡</span>
+                <span>Capture Live Frame &amp; Run Qloo AI</span>
+                <span class="cta-live-pill">LIVE API</span>
               </button>
             </div>
             <button type="button" class="video-ctrl-btn" id="btnToggleMute">
@@ -326,8 +328,10 @@
         <button type="button" class="pill-btn" id="btnBackToStage">
           ← Back to 3-Video Showcase
         </button>
-        <button type="button" class="pill-btn primary-dark" id="btnForceLiveRefresh">
-          Capture Live Frame &amp; Force Live API Call
+        <button type="button" class="pill-btn cta-force-live-btn" id="btnForceLiveRefresh">
+          <span class="cta-spark-icon">⚡</span>
+          <span>Capture Live Frame &amp; Force Live API Call</span>
+          <span class="cta-live-pill">VISION + QLOO</span>
         </button>
         <button type="button" class="pill-btn" id="btnCopyOfferText">
           Copy Qloo JSON Proof

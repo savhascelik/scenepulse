@@ -386,7 +386,10 @@ function renderStageScreen() {
 function renderDetailScreen(resetVideoSource = false) {
   const video = getActiveVideo();
   if (!video) return;
-  const impulse = state.activeImpulse || pickImpulseForTimestamp(video, 5);
+  const isCustomAwaitingCapture = Boolean(state.customVideoObjectUrl && !state.activeImpulse);
+  const impulse = isCustomAwaitingCapture
+    ? null
+    : state.activeImpulse || pickImpulseForTimestamp(video, 5);
   const resolvedSeeds = Array.isArray(impulse?.qloo_resolved_entities) ? impulse.qloo_resolved_entities : [];
 
   if (resetVideoSource && els.detailVideoPlayer) {
@@ -400,17 +403,26 @@ function renderDetailScreen(resetVideoSource = false) {
   }
 
   // Right Top Category Pills
-  const pills = Array.isArray(video.category_pills) ? video.category_pills : [];
-  els.detailCategoryTags.innerHTML =
-    pills.map((p) => `<span class="cat-chip">${escapeHtml(p)}</span>`).join('') +
-    `<span class="holographic-pill">LIVE ALGORITHM PROOF</span>`;
+  if (state.customVideoObjectUrl) {
+    const customDomainPills = Array.isArray(impulse?.ad_offers)
+      ? impulse.ad_offers.map((o) => o.category_badge || o.category_key).filter(Boolean)
+      : ['CUSTOM VIDEO UPLOAD'];
+    els.detailCategoryTags.innerHTML =
+      customDomainPills.map((p) => `<span class="cat-chip">${escapeHtml(p)}</span>`).join('') +
+      `<span class="holographic-pill">${isCustomAwaitingCapture ? 'READY FOR LIVE CAPTURE' : 'LIVE VISION + QLOO PROOF'}</span>`;
+  } else {
+    const pills = Array.isArray(video.category_pills) ? video.category_pills : [];
+    els.detailCategoryTags.innerHTML =
+      pills.map((p) => `<span class="cat-chip">${escapeHtml(p)}</span>`).join('') +
+      `<span class="holographic-pill">LIVE ALGORITHM PROOF</span>`;
+  }
 
   // Heading & Technical Pipeline Line
   els.detailSerifHeading.textContent = state.customVideoName
     ? `${state.customVideoName} — Live Frame + 10s Audio Analysis`
     : video.title;
 
-  const modelUsed = impulse?.metrics?.model_used || state.llmStatus?.active_model || 'Multimodal Schema Planner';
+  const modelUsed = impulse?.metrics?.model_used || state.llmStatus?.active_model || 'google/gemma-3-27b-it';
   const qlooBaseUrl = state.qlooStatus?.base_url || 'https://hackathon.api.qloo.com';
   els.detailAuthorLine.innerHTML = `<strong>LLM Planner:</strong> ${escapeHtml(modelUsed)} · <strong>Qloo Endpoint:</strong> ${escapeHtml(qlooBaseUrl)}`;
 
@@ -418,37 +430,87 @@ function renderDetailScreen(resetVideoSource = false) {
   const offers = Array.isArray(impulse?.ad_offers) ? impulse.ad_offers : [];
   const selectedOffer = offers[state.selectedOfferIndex] || offers[0];
   els.metricAffinity.textContent = selectedOffer ? `${selectedOffer.qloo_affinity_score}%` : '—';
-  els.metricSeedCount.textContent = `${resolvedSeeds.length} UUIDs`;
-  els.metricBucketTime.textContent = `T=${impulse?.timestamp_formatted || '00:05'}`;
-  els.metricLatency.textContent = impulse?.latency_ms ? `${impulse.latency_ms} ms` : 'Live';
+  els.metricSeedCount.textContent = isCustomAwaitingCapture ? '0 UUIDs' : `${resolvedSeeds.length} UUIDs`;
+  els.metricBucketTime.textContent = isCustomAwaitingCapture
+    ? 'READY'
+    : `T=${impulse?.timestamp_formatted || '00:05'}`;
+  els.metricLatency.textContent = impulse?.latency_ms ? `${impulse.latency_ms} ms` : 'Ready';
 
-  if (els.fourAdsSectionTitle && offers.length) {
-    const badgeList = offers.map((o) => o.category_badge || o.category_key).join(' · ');
-    els.fourAdsSectionTitle.textContent = `4 LLM-SELECTED QLOO /V2/INSIGHTS MATCHES (${badgeList})`;
+  if (els.fourAdsSectionTitle) {
+    if (offers.length) {
+      const badgeList = offers.map((o) => o.category_badge || o.category_key).join(' · ');
+      els.fourAdsSectionTitle.textContent = `4 LLM-SELECTED QLOO /V2/INSIGHTS MATCHES (${badgeList})`;
+    } else {
+      els.fourAdsSectionTitle.textContent =
+        'AWAITING LIVE FRAME CAPTURE — CLICK "CAPTURE LIVE FRAME" TO EXTRACT QLOO ENTITIES';
+    }
   }
 
   // Cultural Signal & Resolved Qloo Seed Pills
-  const tags = Array.isArray(impulse?.qloo_taste_tags) ? impulse.qloo_taste_tags : [];
-  const seedBadges = resolvedSeeds.map((s) => `SEED: ${s.name} (${String(s.entity_id).slice(0, 8)})`);
-  const combinedSignals = [...seedBadges, ...tags];
-  els.detailSignalTags.innerHTML = combinedSignals
-    .map((tag, i) =>
-      i < resolvedSeeds.length
-        ? `<span class="holographic-pill">${escapeHtml(tag)}</span>`
-        : `<span class="cat-chip" style="background:#FFFFFF;">${escapeHtml(tag)}</span>`
-    )
-    .join('');
+  if (isCustomAwaitingCapture) {
+    els.detailSignalTags.innerHTML = `<span class="holographic-pill">⚡ Custom video ready — Click "Capture Live Frame &amp; Force Live API Call" below to extract real-time Qloo seeds</span>`;
+  } else {
+    const tags = Array.isArray(impulse?.qloo_taste_tags) ? impulse.qloo_taste_tags : [];
+    const seedBadges = resolvedSeeds.map((s) => `SEED: ${s.name} (${String(s.entity_id).slice(0, 8)})`);
+    const combinedSignals = [...seedBadges, ...tags];
+    els.detailSignalTags.innerHTML = combinedSignals
+      .map((tag, i) =>
+        i < resolvedSeeds.length
+          ? `<span class="holographic-pill">${escapeHtml(tag)}</span>`
+          : `<span class="cat-chip" style="background:#FFFFFF;">${escapeHtml(tag)}</span>`
+      )
+      .join('');
+  }
 
   renderDetailOfferSelection();
 }
 
 function renderDetailOfferSelection() {
   const video = getActiveVideo();
-  const impulse = state.activeImpulse || pickImpulseForTimestamp(video, 5);
+  const isCustomAwaitingCapture = Boolean(state.customVideoObjectUrl && !state.activeImpulse);
+  const impulse = isCustomAwaitingCapture
+    ? null
+    : state.activeImpulse || pickImpulseForTimestamp(video, 5);
   const offers = Array.isArray(impulse?.ad_offers) ? impulse.ad_offers : [];
   const resolvedSeeds = Array.isArray(impulse?.qloo_resolved_entities) ? impulse.qloo_resolved_entities : [];
 
-  if (!offers.length) return;
+  if (isCustomAwaitingCapture || !offers.length) {
+    els.videoHudOverlayLayer.innerHTML = '';
+    els.fourAlignedAdsGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: 14px; padding: 22px; text-align: center; color: var(--text-secondary);">
+        <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-primary); margin-bottom: 6px;">
+          ⚡ CLEAN CUSTOM VIDEO WORKSPACE — ZERO PRE-SEEDED ENTITIES
+        </div>
+        <div style="font-size: 13px; color: var(--text-primary); font-weight: 500;">
+          Play or scrub your uploaded video to any scene, then click <strong>"⚡ Capture Live Frame &amp; Run Qloo AI"</strong> to extract real visual cues via <code>google/gemma-3-27b-it</code> and resolve live Qloo <code>/search</code> &amp; <code>/v2/insights</code> matches.
+        </div>
+      </div>
+    `;
+    els.selectedOfferUrnBadge.textContent = 'AWAITING LIVE CAPTURE';
+    els.selectedOfferTitle.textContent = 'Ready to Analyze Uploaded Video Frame';
+    els.selectedOfferHook.textContent =
+      'Click "⚡ Capture Live Frame & Force Live API Call" to inspect this video';
+    els.selectedOfferCoupon.textContent = 'LIVE-READY';
+    els.selectedOfferReasoning.textContent =
+      'Custom uploads start with a clean slate (no pre-loaded showcase seeds). When you capture a frame, ScenePulse snapshots the exact HTML5 <canvas> bitmap, extracts on-screen brands/topics/context with Gemma-3-27B Vision, resolves Qloo entity UUIDs via /search, and fetches 4 cross-domain /v2/insights recommendations.';
+    if (els.selectedOfferQlooDescription) {
+      els.selectedOfferQlooDescription.textContent =
+        'Waiting for live HTML5 <canvas> frame capture...';
+    }
+    els.selectedOfferQlooMeta.textContent = 'Qloo Entity UUID: Awaiting live frame capture';
+    if (els.selectedOfferKeywords) {
+      els.selectedOfferKeywords.textContent = '';
+    }
+    if (els.capturedFramePreviewImg) {
+      els.capturedFramePreviewImg.src = state.lastCapturedFrameDataUri || '';
+    }
+    els.detailVisualSummary.textContent = 'Waiting for live <canvas> frame snapshot...';
+    els.detailAudioSummary.textContent = 'Custom video stream ready for multimodal analysis.';
+    if (els.resolvedQlooSeedsList) els.resolvedQlooSeedsList.innerHTML = '';
+    if (els.plannedQlooUrnsList) els.plannedQlooUrnsList.innerHTML = '';
+    return;
+  }
+
   if (state.selectedOfferIndex >= offers.length) {
     state.selectedOfferIndex = 0;
   }
@@ -615,30 +677,42 @@ async function triggerScenePulseAnalysis(overrideSeconds = null, forceLive = fal
   const video = getActiveVideo();
   if (!video) return;
 
+  const isCustom = Boolean(state.customVideoObjectUrl);
+  const effectiveForceLive = isCustom ? true : forceLive;
+
   const currentSec =
     overrideSeconds !== null
       ? Number(overrideSeconds)
       : Math.floor(els.detailVideoPlayer?.currentTime || 5);
 
-  els.detailCaptureStatusText.textContent = forceLive
-    ? `Capturing T=${currentSec}s frame -> Executing live LLM URN planner + live Qloo /search & /v2/insights...`
+  els.detailCaptureStatusText.textContent = effectiveForceLive
+    ? `Capturing T=${currentSec}s frame -> Executing live Gemma-3-27B Vision planner + live Qloo /search & /v2/insights...`
     : `Loading T=${currentSec}s scene telemetry...`;
 
+  if (effectiveForceLive) {
+    els.btnForceLiveRefresh?.classList.add('is-analyzing-pulse');
+    els.btnCaptureSceneNow?.classList.add('is-analyzing-pulse');
+  }
+
   const frameBase64 = capturePausedFrameBase64();
-  const aSignals = Array.isArray(video.default_audio_signals) ? video.default_audio_signals : [];
+  const aSignals = isCustom
+    ? []
+    : Array.isArray(video.default_audio_signals)
+    ? video.default_audio_signals
+    : [];
 
   try {
     const res = await fetch('/api/v1/scenes/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
-        video_id: state.customVideoObjectUrl ? null : video.id,
-        video_slug: state.customVideoObjectUrl ? null : video.slug,
+        video_id: isCustom ? null : video.id,
+        video_slug: isCustom ? null : video.slug,
         timestamp_seconds: currentSec,
         frame_image_base64: frameBase64,
         audio_10s_summary: aSignals.join(' | '),
         custom_video_name: state.customVideoName || null,
-        force_refresh: forceLive,
+        force_refresh: effectiveForceLive,
       }),
     });
 
@@ -649,7 +723,7 @@ async function triggerScenePulseAnalysis(overrideSeconds = null, forceLive = fal
       state.activeImpulse = payload.impulse;
       state.selectedOfferIndex = 0;
 
-      if (Array.isArray(video.impulses)) {
+      if (!isCustom && Array.isArray(video.impulses)) {
         const idx = video.impulses.findIndex((i) => i.time_bucket === payload.impulse.time_bucket);
         if (idx >= 0) {
           video.impulses[idx] = payload.impulse;
@@ -658,8 +732,8 @@ async function triggerScenePulseAnalysis(overrideSeconds = null, forceLive = fal
         }
       }
 
-      const sourceBadge = forceLive
-        ? `LIVE LLM + QLOO API (${payload.impulse.latency_ms || 0} ms)`
+      const sourceBadge = effectiveForceLive
+        ? `LIVE VISION + QLOO API (${payload.impulse.latency_ms || 0} ms)`
         : payload.cached_shield_active
         ? `5S BUCKET CACHE (Hit #${payload.hit_count})`
         : `LIVE QLOO API (${payload.impulse.latency_ms || 0} ms)`;
@@ -673,6 +747,9 @@ async function triggerScenePulseAnalysis(overrideSeconds = null, forceLive = fal
   } catch (err) {
     console.error('Scene analysis error:', err);
     showToast('An error occurred during live scene analysis.');
+  } finally {
+    els.btnForceLiveRefresh?.classList.remove('is-analyzing-pulse');
+    els.btnCaptureSceneNow?.classList.remove('is-analyzing-pulse');
   }
 }
 
@@ -790,7 +867,12 @@ function bindEvents() {
   els.btnViewHow?.addEventListener('click', () => switchView('how'));
   els.btnStageOpenDetail?.addEventListener('click', () => switchView('detail'));
   els.btnStageOpenHow?.addEventListener('click', () => switchView('how'));
-  els.btnBackToStage?.addEventListener('click', () => switchView('stage'));
+  els.btnBackToStage?.addEventListener('click', () => {
+    if (state.customVideoObjectUrl) {
+      selectVideoByIndex(state.activeVideoIndex, 5);
+    }
+    switchView('stage');
+  });
   els.btnHowToStudio?.addEventListener('click', () => switchView('detail'));
   els.btnHowToStage?.addEventListener('click', () => switchView('stage'));
 
@@ -936,12 +1018,26 @@ function bindEvents() {
     }
     state.customVideoObjectUrl = URL.createObjectURL(file);
     state.customVideoName = file.name.replace(/\.[^.]+$/, '');
+    state.activeImpulse = null;
+    state.lastCapturedFrameDataUri = null;
+    state.selectedOfferIndex = 0;
+
+    if (els.detailCaptureStatusText) {
+      els.detailCaptureStatusText.textContent =
+        'Custom video loaded — Click "⚡ Capture Live Frame & Run Qloo AI" to analyze the current frame.';
+    }
+    if (els.fourAdsSourceBadge) {
+      els.fourAdsSourceBadge.textContent = 'READY FOR VISION + QLOO';
+    }
+
     switchView('detail');
     if (els.detailVideoPlayer) {
       els.detailVideoPlayer.src = state.customVideoObjectUrl;
+      els.detailVideoPlayer.poster = '';
       els.detailVideoPlayer.play().catch(() => {});
     }
-    showToast(`Loaded "${file.name}". Pause at any frame to run live LLM + Qloo analysis.`);
+    showToast(`Loaded "${file.name}". Click "⚡ Capture Live Frame" at any scene to run Vision LLM + Qloo AI.`);
+    e.target.value = '';
   });
 
   // Keyboard navigation shortcuts
