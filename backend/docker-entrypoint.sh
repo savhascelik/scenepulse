@@ -9,13 +9,11 @@ fi
 
 # Sync container environment variables into .env so php artisan serve workers always read them
 for VAR_NAME in APP_ENV APP_KEY APP_DEBUG APP_URL FRONTEND_URL CORS_ALLOWED_ORIGINS AI_DEFAULT_PROVIDER DAILY_LIVE_LLM_CAP QLOO_SERVER_URL QLOO_BASE_URL QLOO_API_KEY QLOO_CACHE_TTL_HOURS NEBIUS_BASE_URL NEBIUS_API_KEY NEBIUS_DEFAULT_MODEL NEBIUS_FAST_MODEL NEBIUS_VISION_MODEL OPENROUTER_BASE_URL OPENROUTER_API_KEY OPENROUTER_DEFAULT_MODEL OPENROUTER_FAST_MODEL OPENROUTER_VISION_MODEL GEMINI_API_KEY GEMINI_MODEL OPENAI_API_KEY; do
-  eval VAR_VAL=\$$VAR_NAME
+  VAR_VAL=$(printenv "$VAR_NAME" 2>/dev/null | tr -d '\r\n' || true)
   if [ -n "$VAR_VAL" ]; then
-    if grep -q "^${VAR_NAME}=" .env 2>/dev/null; then
-      sed -i "s|^${VAR_NAME}=.*|${VAR_NAME}=${VAR_VAL}|" .env
-    else
-      echo "${VAR_NAME}=${VAR_VAL}" >> .env
-    fi
+    grep -v "^${VAR_NAME}=" .env > .env.tmp 2>/dev/null || true
+    mv .env.tmp .env
+    printf "%s=%s\n" "$VAR_NAME" "$VAR_VAL" >> .env
   fi
 done
 

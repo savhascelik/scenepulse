@@ -238,6 +238,35 @@
             <!-- Populated dynamically by app.js -->
           </div>
 
+          <!-- Sleek In-Video Pending / Multimodal Scanner Overlay -->
+          <div class="video-pending-overlay hidden" id="videoAnalysisPendingOverlay">
+            <div class="scanner-laser-line"></div>
+            <div class="pending-glass-box">
+              <div class="pending-header-row">
+                <div class="pending-spinner-ring"></div>
+                <div class="pending-title-wrap">
+                  <div class="pending-badge-tag">LIVE VISION + QLOO TASTE AI PIPELINE</div>
+                  <div class="pending-main-title" id="pendingMainTitle">Analyzing Captured Frame &amp; 10s Audio...</div>
+                </div>
+                <div class="pending-timer-pill" id="pendingElapsedTimer">0.1s</div>
+              </div>
+              <div class="pending-steps-list">
+                <div class="pending-step-item is-active" id="pendingStep1">
+                  <span class="step-dot"></span>
+                  <span>1. Capturing HTML5 &lt;canvas&gt; Frame &amp; 10s Audio Telemetry</span>
+                </div>
+                <div class="pending-step-item" id="pendingStep2">
+                  <span class="step-dot"></span>
+                  <span>2. Gemma-3-27B Vision Extracting Scene Entities &amp; URNs</span>
+                </div>
+                <div class="pending-step-item" id="pendingStep3">
+                  <span class="step-dot"></span>
+                  <span>3. Querying Live Qloo /search &amp; /v2/insights Graph</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Floating Bottom Controls Over Video -->
           <div class="video-floating-controls">
             <div style="display:flex; align-items:center; gap:10px;">

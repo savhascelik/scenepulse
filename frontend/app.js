@@ -689,10 +689,62 @@ async function triggerScenePulseAnalysis(overrideSeconds = null, forceLive = fal
     ? `Capturing T=${currentSec}s frame -> Executing live Gemma-3-27B Vision planner + live Qloo /search & /v2/insights...`
     : `Loading T=${currentSec}s scene telemetry...`;
 
-  if (effectiveForceLive) {
-    els.btnForceLiveRefresh?.classList.add('is-analyzing-pulse');
-    els.btnCaptureSceneNow?.classList.add('is-analyzing-pulse');
+  const pendingOverlay = document.getElementById('videoAnalysisPendingOverlay');
+  const pendingTimerEl = document.getElementById('pendingElapsedTimer');
+  const step1El = document.getElementById('pendingStep1');
+  const step2El = document.getElementById('pendingStep2');
+  const step3El = document.getElementById('pendingStep3');
+  const rightCardEl = document.querySelector('.postalamak-card');
+
+  const origCaptureBtnHtml = els.btnCaptureSceneNow ? els.btnCaptureSceneNow.innerHTML : '';
+  const origForceBtnHtml = els.btnForceLiveRefresh ? els.btnForceLiveRefresh.innerHTML : '';
+
+  let pendingTimerInterval = null;
+  const startMs = performance.now();
+
+  if (pendingOverlay) {
+    pendingOverlay.classList.remove('hidden');
   }
+  if (step1El && step2El && step3El) {
+    step1El.className = 'pending-step-item is-active';
+    step2El.className = 'pending-step-item';
+    step3El.className = 'pending-step-item';
+  }
+  if (els.fourAlignedAdsGrid) {
+    els.fourAlignedAdsGrid.classList.add('cards-pending-shimmer');
+  }
+  if (rightCardEl) {
+    rightCardEl.classList.add('cards-pending-shimmer');
+  }
+  if (els.fourAdsSourceBadge) {
+    els.fourAdsSourceBadge.textContent = 'PENDING · VISION + QLOO PIPELINE...';
+  }
+
+  els.btnForceLiveRefresh?.classList.add('is-analyzing-pulse');
+  els.btnCaptureSceneNow?.classList.add('is-analyzing-pulse');
+
+  if (els.btnCaptureSceneNow) {
+    els.btnCaptureSceneNow.innerHTML = `<span class="btn-inline-spinner"></span><span>Analyzing Frame &amp; Querying Qloo...</span><span class="cta-live-pill">PENDING</span>`;
+  }
+  if (els.btnForceLiveRefresh) {
+    els.btnForceLiveRefresh.innerHTML = `<span class="btn-inline-spinner"></span><span>Analyzing Frame &amp; Querying Qloo...</span><span class="cta-live-pill">PENDING</span>`;
+  }
+
+  pendingTimerInterval = window.setInterval(() => {
+    const elapsedSec = ((performance.now() - startMs) / 1000).toFixed(1);
+    if (pendingTimerEl) {
+      pendingTimerEl.textContent = `${elapsedSec}s`;
+    }
+    const elapsedNum = parseFloat(elapsedSec);
+    if (elapsedNum >= 0.4 && elapsedNum < 1.3 && step1El && step2El) {
+      step1El.className = 'pending-step-item is-done';
+      step2El.className = 'pending-step-item is-active';
+    } else if (elapsedNum >= 1.3 && step2El && step3El) {
+      step1El.className = 'pending-step-item is-done';
+      step2El.className = 'pending-step-item is-done';
+      step3El.className = 'pending-step-item is-active';
+    }
+  }, 100);
 
   const frameBase64 = capturePausedFrameBase64();
   const aSignals = isCustom
@@ -748,6 +800,24 @@ async function triggerScenePulseAnalysis(overrideSeconds = null, forceLive = fal
     console.error('Scene analysis error:', err);
     showToast('An error occurred during live scene analysis.');
   } finally {
+    if (pendingTimerInterval) {
+      window.clearInterval(pendingTimerInterval);
+    }
+    if (pendingOverlay) {
+      pendingOverlay.classList.add('hidden');
+    }
+    if (els.fourAlignedAdsGrid) {
+      els.fourAlignedAdsGrid.classList.remove('cards-pending-shimmer');
+    }
+    if (rightCardEl) {
+      rightCardEl.classList.remove('cards-pending-shimmer');
+    }
+    if (els.btnCaptureSceneNow && origCaptureBtnHtml) {
+      els.btnCaptureSceneNow.innerHTML = origCaptureBtnHtml;
+    }
+    if (els.btnForceLiveRefresh && origForceBtnHtml) {
+      els.btnForceLiveRefresh.innerHTML = origForceBtnHtml;
+    }
     els.btnForceLiveRefresh?.classList.remove('is-analyzing-pulse');
     els.btnCaptureSceneNow?.classList.remove('is-analyzing-pulse');
   }

@@ -153,6 +153,7 @@ class SceneMultimodalService
                     'resolved_seeds_count' => count($resolvedEntities),
                     'insights_returned_count' => count($adOffers),
                     'model_used' => $extracted['model_used'] ?? 'multimodal-llm',
+                    'llm_diag' => $extracted['llm_diag'] ?? 'ok',
                     'planned_urns' => array_values(array_map(
                         fn ($r) => QlooTasteService::SUPPORTED_DOMAINS[$r['domain']]['urn'] ?? 'urn:entity:brand',
                         $plannedRequests
@@ -188,10 +189,10 @@ class SceneMultimodalService
     {
         $preferred = strtolower(trim((string) config('ai.default_provider', 'nebius')));
 
-        $openrouterKey = trim((string) (config('ai.openrouter.api_key') ?: config('ai.env_keys.OPENROUTER_API_KEY', '')));
-        $nebiusKey = trim((string) (config('ai.nebius.api_key') ?: config('ai.env_keys.NEBIUS_API_KEY', '')));
-        $geminiKey = trim((string) (config('ai.gemini.api_key') ?: config('ai.env_keys.GEMINI_API_KEY', '')));
-        $openaiKey = trim((string) (config('ai.openai.api_key') ?: config('ai.env_keys.OPENAI_API_KEY', '')));
+        $openrouterKey = preg_replace('/[\s"\']+/', '', (string) (config('ai.openrouter.api_key') ?: config('ai.env_keys.OPENROUTER_API_KEY', '')));
+        $nebiusKey = preg_replace('/[\s"\']+/', '', (string) (config('ai.nebius.api_key') ?: config('ai.env_keys.NEBIUS_API_KEY', '')));
+        $geminiKey = preg_replace('/[\s"\']+/', '', (string) (config('ai.gemini.api_key') ?: config('ai.env_keys.GEMINI_API_KEY', '')));
+        $openaiKey = preg_replace('/[\s"\']+/', '', (string) (config('ai.openai.api_key') ?: config('ai.env_keys.OPENAI_API_KEY', '')));
 
         $order = match ($preferred) {
             'openrouter' => ['openrouter', 'nebius', 'gemini', 'openai'],
@@ -307,10 +308,10 @@ Return ONLY a valid, compact JSON object in English (no markdown fences):
   ],
   "qloo_taste_tags": ["#Tag1", "#Tag2", "#Tag3"],
   "ad_blueprints": [
-    {"domain": "brand", "location_query": null},
-    {"domain": "tv_show", "location_query": null},
-    {"domain": "destination", "location_query": "San Francisco"},
-    {"domain": "book", "location_query": null}
+    {"domain": "brand", "location_query": null, "ad_hook": "1-sentence contextual ad/sponsorship placement rationale linking this scene to a matching brand"},
+    {"domain": "movie", "location_query": null, "ad_hook": "1-sentence contextual media/cinema cross-promotion rationale for viewers of this scene"},
+    {"domain": "tv_show", "location_query": null, "ad_hook": "1-sentence streaming series cross-promotion rationale"},
+    {"domain": "book", "location_query": null, "ad_hook": "1-sentence executive book/publication sponsorship rationale"}
   ]
 }
 PROMPT;
@@ -327,6 +328,7 @@ PROMPT;
                 ];
             }
 
+            $llmDiag = 'init';
             try {
                 $headers = [];
                 if ($provider === 'openrouter') {
@@ -344,7 +346,7 @@ PROMPT;
                             ['role' => 'user', 'content' => $hasImage ? $userContent : $userText],
                         ],
                         'temperature' => 0.15,
-                        'max_tokens' => 450,
+                        'max_tokens' => 500,
                     ]);
 
                 if ($response->successful()) {
@@ -373,9 +375,12 @@ PROMPT;
 
                         $decoded['provider_used'] = $provider;
                         $decoded['model_used'] = $model;
+                        $decoded['llm_diag'] = 'ok';
                         return $decoded;
                     }
+                    $llmDiag = 'json-parse-empty:' . substr($rawContent, 0, 80);
                 } else {
+                    $llmDiag = 'http-' . $response->status() . ':' . substr($response->body(), 0, 120);
                     Log::warning('LLM non-200 response', [
                         'provider' => $provider,
                         'model' => $model,
@@ -384,17 +389,21 @@ PROMPT;
                     ]);
                 }
             } catch (\Throwable $e) {
+                $llmDiag = 'exc:' . substr($e->getMessage(), 0, 120);
                 Log::warning('SceneMultimodalService LLM error: ' . $e->getMessage());
             }
+        } else {
+            $llmDiag = $llmConfig === null ? 'no-llm-config' : 'daily-cap-exceeded';
         }
 
         return [
             'provider_used' => 'scene-telemetry',
             'model_used' => 'telemetry-direct',
+            'llm_diag' => $llmDiag ?? 'fallback',
             'scene_headline' => "{$videoTitle} — Frame & 10s Audio Snapshot ({$timestampFormatted})",
             'visual_signals' => $videoItem?->default_visual_signals ?? ['Captured live video frame at ' . $timestampFormatted],
             'audio_10s_signals' => $videoItem?->default_audio_signals ?? ['10-second audio window at ' . $timestampFormatted],
-            'qloo_seed_queries' => $videoItem?->qloo_seed_queries ?? ['Google', 'San Francisco', 'CNBC'],
+            'qloo_seed_queries' => $videoItem?->qloo_seed_queries ?? ['Google', 'Alphabet', 'CNBC', 'San Francisco'],
             'qloo_taste_tags' => ['#MultimodalFrame', '#Audio10s', '#QlooInsights'],
             'ad_blueprints' => $this->defaultBlueprintsForSlug($videoItem?->slug),
         ];
@@ -436,7 +445,9 @@ PROMPT;
                 'domain' => $domainKey,
                 'location_query' => !empty($bp['location_query']) ? (string) $bp['location_query'] : $this->defaultLocationForSlug($videoSlug),
                 'ad_headline' => !empty($bp['ad_headline']) ? (string) $bp['ad_headline'] : null,
-                'why_this_ad' => !empty($bp['why_this_ad']) ? (string) $bp['why_this_ad'] : null,
+                'why_this_ad' => !empty($bp['ad_hook'])
+                    ? (string) $bp['ad_hook']
+                    : (!empty($bp['why_this_ad']) ? (string) $bp['why_this_ad'] : null),
             ];
 
             if (count($normalized) === 4) {
@@ -632,8 +643,10 @@ PROMPT;
 
             $visualCue = $visualSignals[$idx % max(1, count($visualSignals))] ?? ($visualSignals[0] ?? 'paused video frame');
             $audioCue = $audioSignals[$idx % max(1, count($audioSignals))] ?? ($audioSignals[0] ?? '10s audio spectrum');
+            $llmAdHook = trim((string) ($req['why_this_ad'] ?? ''));
 
-            $whyThisAd = "Scene signals at T={$timestampFormatted} ({$visualCue}; {$audioCue}) resolved to Qloo seeds [{$seedNamesLabel}] and matched '{$topQloo['name']}' via {$domainMeta['urn']} ({$topQloo['affinity_score']}% Affinity, UUID: {$topQloo['entity_id']}).";
+            $whyThisAd = "Scene signals at T={$timestampFormatted} ({$visualCue}; {$audioCue}) resolved to Qloo seeds [{$seedNamesLabel}] and matched '{$topQloo['name']}' via {$domainMeta['urn']} ({$topQloo['affinity_score']}% Affinity, UUID: {$topQloo['entity_id']})."
+                . ($llmAdHook !== '' ? " Contextual Ad Placement: {$llmAdHook}" : '');
 
             $finalOffers[] = [
                 'slot' => $slot++,
@@ -700,11 +713,7 @@ PROMPT;
     private function resolveNebiusModel(bool $hasImage): string
     {
         if ($hasImage) {
-            $configured = trim((string) config('ai.nebius.vision_model', 'google/gemma-3-27b-it'));
-            if ($configured === '' || str_contains(strtolower($configured), 'qwen2.5-vl') || str_contains(strtolower($configured), 'meta-llama')) {
-                return 'google/gemma-3-27b-it';
-            }
-            return $configured;
+            return 'google/gemma-3-27b-it';
         }
 
         $configured = trim((string) config('ai.nebius.fast_model', 'Qwen/Qwen3-30B-A3B-Instruct-2507'));
