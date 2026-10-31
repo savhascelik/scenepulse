@@ -1,4 +1,4 @@
-# ScenePulse by Flownie
+# ScenePulse
 **Real-Time Multimodal Video Frame & 10s Audio Cultural Intelligence Engine — Powered by Qloo Taste AI**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-1F4E5B.svg)](./LICENSE)
@@ -12,7 +12,7 @@
 
 Standard contextual video systems only match literal visual objects (*"there is a coffee cup -> show a coffee ad"*) or hardcode the same output categories for every clip. That approach misses the **cultural soul** of a scene and produces noisy, out-of-context recommendations.
 
-**ScenePulse by Flownie** turns every **video pause** into a precision cultural discovery moment:
+**ScenePulse** turns every **video pause** into a precision cultural discovery moment:
 1. **Paused Video Frame + 10s Audio Capture:** When playback pauses, ScenePulse captures the exact HTML5 `<canvas>` video frame (`480x270` Base64 JPEG) along with the trailing 10-second audio spectrum summary.
 2. **Schema-Aware Multimodal LLM Planner:** We inject the complete **Qloo API specification** (`/search` + all 9 `/v2/insights` entity URNs) directly into the LLM system prompt. The LLM analyzes the visual frame and 10s audio window, extracts 3 concrete Qloo `/search` seed entities, and dynamically selects the **4 most contextually relevant Qloo `/v2/insights` URNs**:
    - `urn:entity:brand` (Brands & Craft Goods)
